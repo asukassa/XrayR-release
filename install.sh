@@ -109,15 +109,15 @@ install_XrayR() {
 	cd /usr/local/XrayR/
 
     if  [ $# == 0 ] ;then
-        last_version=$(curl -Ls "https://api.github.com/repos/asukassa/XrayR/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        last_version=$(curl -Ls "https://api.github.com/repos/modusnyan/XrayR/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}检测 XrayR 版本失败，可能是超出 Github API 限制，请稍后再试，或手动指定 XrayR 版本安装${plain}"
+            echo -e "${red}检测 XrayR 版本失败，请先在 https://github.com/modusnyan/XrayR/releases 发布包含 XrayR-linux-${arch}.zip 的 Release${plain}"
             exit 1
         fi
         echo -e "检测到 XrayR 最新版本：${last_version}，开始安装"
-        wget -q -N --no-check-certificate -O /usr/local/XrayR/XrayR-linux.zip https://github.com/asukassa/XrayR/releases/download/${last_version}/XrayR-linux-${arch}.zip
+        wget -q -N --no-check-certificate -O /usr/local/XrayR/XrayR-linux.zip https://github.com/modusnyan/XrayR/releases/download/${last_version}/XrayR-linux-${arch}.zip
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 XrayR 失败，请确保你的服务器能够下载 Github 的文件${plain}"
+            echo -e "${red}下载 XrayR 失败，请确认 https://github.com/modusnyan/XrayR/releases/download/${last_version}/XrayR-linux-${arch}.zip 存在${plain}"
             exit 1
         fi
     else
@@ -126,11 +126,11 @@ install_XrayR() {
 	else
 	    last_version="v"$1
 	fi
-        url="https://github.com/asukassa/XrayR/releases/download/${last_version}/XrayR-linux-${arch}.zip"
+        url="https://github.com/modusnyan/XrayR/releases/download/${last_version}/XrayR-linux-${arch}.zip"
         echo -e "开始安装 XrayR ${last_version}"
         wget -q -N --no-check-certificate -O /usr/local/XrayR/XrayR-linux.zip ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 XrayR ${last_version} 失败，请确保此版本存在${plain}"
+            echo -e "${red}下载 XrayR ${last_version} 失败，请确认 ${url} 存在${plain}"
             exit 1
         fi
     fi
@@ -139,8 +139,9 @@ install_XrayR() {
     rm XrayR-linux.zip -f
     chmod +x XrayR
     mkdir /etc/XrayR/ -p
+    systemctl unmask XrayR 2>/dev/null
     rm /etc/systemd/system/XrayR.service -f
-    file="https://github.com/asukassa/XrayR-release/raw/master/XrayR.service"
+    file="https://raw.githubusercontent.com/modusnyan/XrayR-release/refs/heads/master/XrayR.service"
     wget -q -N --no-check-certificate -O /etc/systemd/system/XrayR.service ${file}
     #cp -f XrayR.service /etc/systemd/system/
     systemctl daemon-reload
@@ -153,7 +154,7 @@ install_XrayR() {
     if [[ ! -f /etc/XrayR/config.yml ]]; then
         cp config.yml /etc/XrayR/
         echo -e ""
-        echo -e "全新安装，请先参看教程：https://github.com/asukassa/XrayR，配置必要的内容"
+        echo -e "全新安装，请先参看教程：https://github.com/modusnyan/XrayR，配置必要的内容"
     else
         systemctl start XrayR
         sleep 2
@@ -162,7 +163,7 @@ install_XrayR() {
         if [[ $? == 0 ]]; then
             echo -e "${green}XrayR 重启成功${plain}"
         else
-            echo -e "${red}XrayR 可能启动失败，请稍后使用 XrayR log 查看日志信息，若无法启动，则可能更改了配置格式，请前往 wiki 查看：https://github.com/XrayR-project/XrayR/wiki${plain}"
+            echo -e "${red}XrayR 可能启动失败，请稍后使用 XrayR log 查看日志信息，若无法启动，则可能更改了配置格式，请前往 wiki 查看：https://github.com/modusnyan/XrayR/wiki${plain}"
         fi
     fi
 
@@ -181,9 +182,13 @@ install_XrayR() {
     if [[ ! -f /etc/XrayR/rulelist ]]; then
         cp rulelist /etc/XrayR/
     fi
-    curl -o /usr/bin/XrayR -Ls https://raw.githubusercontent.com/asukassa/XrayR-release/master/XrayR.sh
+    curl -fLo /usr/bin/XrayR https://raw.githubusercontent.com/modusnyan/XrayR-release/refs/heads/master/XrayR.sh
+    if [[ $? -ne 0 ]]; then
+        echo -e "${red}下载 XrayR 管理脚本失败，请检查 https://raw.githubusercontent.com/modusnyan/XrayR-release/refs/heads/master/XrayR.sh 是否可访问${plain}"
+        exit 1
+    fi
     chmod +x /usr/bin/XrayR
-    ln -s /usr/bin/XrayR /usr/bin/xrayr # 小写兼容
+    ln -sf /usr/bin/XrayR /usr/bin/xrayr # 小写兼容
     chmod +x /usr/bin/xrayr
     cd $cur_dir
     rm -f install.sh
